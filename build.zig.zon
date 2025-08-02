@@ -1,0 +1,21 @@
+.{
+    .name = .UI_test,
+    .version = "0.0.0",
+    .fingerprint = 0x87aebbc02835e36b, // Changing this has security and trust implications.
+    .minimum_zig_version = "0.15.0-dev.905+edf785db0",
+
+    .dependencies = .{
+        .raylib_pkg = .{
+            .path = "raylib-zig",
+        },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        // For example...
+        //"LICENSE",
+        //"README.md",
+    },
+}
