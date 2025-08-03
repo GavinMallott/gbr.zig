@@ -4,37 +4,50 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Add the raylib-zig dependency
-    const raylib_pkg = b.dependency("raylib_pkg", .{});
-    const raylib = raylib_pkg.module("raylib");
-
-    const exe = b.addExecutable(.{
-        .name = "UI_test",
-        .root_source_file = b.path("src/main.zig"),
+    const mod = b.addModule("gerber", .{
+        .root_source_file = b.path("src/gerber.zig"),
         .target = target,
-        .optimize = optimize,
     });
 
-    exe.root_module.addImport("raylib", raylib);
-
-    // Link required raylib system libs manually
-    exe.linkLibrary(raylib_pkg.artifact("raylib"));
-    exe.linkSystemLibrary("winmm");
-    exe.linkSystemLibrary("gdi32");
-    exe.linkSystemLibrary("opengl32");
-    exe.linkSystemLibrary("user32");
-    exe.linkSystemLibrary("shell32");
-
-    exe.subsystem = switch (optimize) {
-        .Debug => .Console,
-        else => .Windows,
-    };
+    const exe = b.addExecutable(.{
+        .name = "gerber",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "gerber", .module = mod },
+            },
+        }),
+    });
 
     b.installArtifact(exe);
 
-    const run_cmd = b.addRunArtifact(exe);
-    if (b.args) |args| run_cmd.addArgs(args);
-
     const run_step = b.step("run", "Run the app");
+
+    const run_cmd = b.addRunArtifact(exe);
     run_step.dependOn(&run_cmd.step);
+
+    run_cmd.step.dependOn(b.getInstallStep());
+
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+
+    const mod_tests = b.addTest(.{
+        .root_module = mod,
+    });
+
+    const run_mod_tests = b.addRunArtifact(mod_tests);
+
+    const exe_tests = b.addTest(.{
+        .root_module = exe.root_module,
+    });
+
+    const run_exe_tests = b.addRunArtifact(exe_tests);
+
+    const test_step = b.step("test", "Run tests");
+    test_step.dependOn(&run_mod_tests.step);
+    test_step.dependOn(&run_exe_tests.step);
+
 }
